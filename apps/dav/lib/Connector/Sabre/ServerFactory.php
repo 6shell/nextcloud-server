@@ -10,7 +10,8 @@ namespace OCA\DAV\Connector\Sabre;
 use OCA\DAV\AppInfo\PluginManager;
 use OCA\DAV\CalDAV\DefaultCalendarValidator;
 use OCA\DAV\DAV\ViewOnlyPlugin;
-use OCA\DAV\Files\BrowserErrorPagePlugin;
+use OCA\DAV\Files\ErrorPagePlugin;
+use OCA\Theming\ThemingDefaults;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Folder;
 use OCP\Files\IFilenameValidator;
@@ -27,39 +28,19 @@ use Psr\Log\LoggerInterface;
 use Sabre\DAV\Auth\Plugin;
 
 class ServerFactory {
-	private IConfig $config;
-	private LoggerInterface $logger;
-	private IDBConnection $databaseConnection;
-	private IUserSession $userSession;
-	private IMountManager $mountManager;
-	private ITagManager $tagManager;
-	private IRequest $request;
-	private IPreview $previewManager;
-	private IEventDispatcher $eventDispatcher;
-	private IL10N $l10n;
 
 	public function __construct(
-		IConfig $config,
-		LoggerInterface $logger,
-		IDBConnection $databaseConnection,
-		IUserSession $userSession,
-		IMountManager $mountManager,
-		ITagManager $tagManager,
-		IRequest $request,
-		IPreview $previewManager,
-		IEventDispatcher $eventDispatcher,
-		IL10N $l10n
+		private IConfig $config,
+		private LoggerInterface $logger,
+		private IDBConnection $databaseConnection,
+		private IUserSession $userSession,
+		private IMountManager $mountManager,
+		private ITagManager $tagManager,
+		private IRequest $request,
+		private IPreview $previewManager,
+		private IEventDispatcher $eventDispatcher,
+		private IL10N $l10n,
 	) {
-		$this->config = $config;
-		$this->logger = $logger;
-		$this->databaseConnection = $databaseConnection;
-		$this->userSession = $userSession;
-		$this->mountManager = $mountManager;
-		$this->tagManager = $tagManager;
-		$this->request = $request;
-		$this->previewManager = $previewManager;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->l10n = $l10n;
 	}
 
 	/**
@@ -78,7 +59,10 @@ class ServerFactory {
 
 		// Load plugins
 		$server->addPlugin(new \OCA\DAV\Connector\Sabre\MaintenancePlugin($this->config, $this->l10n));
-		$server->addPlugin(new \OCA\DAV\Connector\Sabre\BlockLegacyClientPlugin($this->config));
+		$server->addPlugin(new BlockLegacyClientPlugin(
+			$this->config,
+			\OCP\Server::get(ThemingDefaults::class),
+		));
 		$server->addPlugin(new \OCA\DAV\Connector\Sabre\AnonymousOptionsPlugin());
 		$server->addPlugin($authPlugin);
 		// FIXME: The following line is a workaround for legacy components relying on being able to send a GET to /
@@ -86,7 +70,13 @@ class ServerFactory {
 		$server->addPlugin(new \OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin('webdav', $this->logger));
 		$server->addPlugin(new \OCA\DAV\Connector\Sabre\LockPlugin());
 
-		$server->addPlugin(new RequestIdHeaderPlugin(\OC::$server->get(IRequest::class)));
+		$server->addPlugin(new RequestIdHeaderPlugin($this->request));
+
+		$server->addPlugin(new ZipFolderPlugin(
+			$objectTree,
+			$this->logger,
+			$this->eventDispatcher,
+		));
 
 		// Some WebDAV clients do require Class 2 WebDAV support (locking), since
 		// we do not provide locking we emulate it using a fake locking plugin.
@@ -98,12 +88,10 @@ class ServerFactory {
 			$server->addPlugin(new \OCA\DAV\Connector\Sabre\FakeLockerPlugin());
 		}
 
-		if (BrowserErrorPagePlugin::isBrowserRequest($this->request)) {
-			$server->addPlugin(new BrowserErrorPagePlugin());
-		}
+		$server->addPlugin(new ErrorPagePlugin($this->request, $this->config));
 
 		// wait with registering these until auth is handled and the filesystem is setup
-		$server->on('beforeMethod:*', function () use ($server, $objectTree, $viewCallBack) {
+		$server->on('beforeMethod:*', function () use ($server, $objectTree, $viewCallBack): void {
 			// ensure the skeleton is copied
 			$userFolder = \OC::$server->getUserFolder();
 

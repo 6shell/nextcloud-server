@@ -49,7 +49,7 @@ class Manager {
 		Image $image,
 		IUserManager $userManager,
 		INotificationManager $notificationManager,
-		IManager $shareManager
+		IManager $shareManager,
 	) {
 		$this->ocConfig = $ocConfig;
 		$this->ocFilesystem = $ocFilesystem;
@@ -106,6 +106,7 @@ class Manager {
 	/**
 	 * @brief checks whether the Access instance has been set
 	 * @throws \Exception if Access has not been set
+	 * @psalm-assert !null $this->access
 	 * @return null
 	 */
 	private function checkAccess() {
@@ -141,6 +142,7 @@ class Manager {
 			$this->access->getConnection()->ldapAttributeHeadline,
 			$this->access->getConnection()->ldapAttributeBiography,
 			$this->access->getConnection()->ldapAttributeBirthDate,
+			$this->access->getConnection()->ldapAttributePronouns,
 		];
 
 		$homeRule = (string)$this->access->getConnection()->homeFolderNamingRule;
@@ -236,5 +238,38 @@ class Manager {
 		}
 
 		return $this->createInstancyByUserName($id);
+	}
+
+	/**
+	 * @brief Checks whether a User object by its DN or Nextcloud username exists
+	 * @param string $id the DN or username of the user
+	 * @throws \Exception when connection could not be established
+	 */
+	public function exists($id): bool {
+		$this->checkAccess();
+		$this->logger->debug('Checking if {id} exists', ['id' => $id]);
+		if (isset($this->usersByDN[$id])) {
+			return true;
+		} elseif (isset($this->usersByUid[$id])) {
+			return true;
+		}
+
+		if ($this->access->stringResemblesDN($id)) {
+			$this->logger->debug('{id} looks like a dn', ['id' => $id]);
+			$uid = $this->access->dn2username($id);
+			if ($uid !== false) {
+				return true;
+			}
+		}
+
+		// Most likely a uid. Check whether it is a deleted user
+		if ($this->isDeletedUser($id)) {
+			return true;
+		}
+		$dn = $this->access->username2dn($id);
+		if ($dn !== false) {
+			return true;
+		}
+		return false;
 	}
 }

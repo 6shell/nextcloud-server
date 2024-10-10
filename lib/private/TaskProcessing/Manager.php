@@ -175,7 +175,7 @@ class Manager implements IManager {
 					}
 					try {
 						return ['output' => $this->provider->process($input['input'])];
-					} catch(\RuntimeException $e) {
+					} catch (\RuntimeException $e) {
 						throw new ProcessingException($e->getMessage(), 0, $e);
 					}
 				}
@@ -306,13 +306,13 @@ class Manager implements IManager {
 				public function process(?string $userId, array $input, callable $reportProgress): array {
 					try {
 						$folder = $this->appData->getFolder('text2image');
-					} catch(\OCP\Files\NotFoundException) {
+					} catch (\OCP\Files\NotFoundException) {
 						$folder = $this->appData->newFolder('text2image');
 					}
 					$resources = [];
 					$files = [];
 					for ($i = 0; $i < $input['numberOfImages']; $i++) {
-						$file = $folder->newFile(time() . '-' . rand(1, 100000) . '-' .  $i);
+						$file = $folder->newFile(time() . '-' . rand(1, 100000) . '-' . $i);
 						$files[] = $file;
 						$resource = $file->write();
 						if ($resource !== false && $resource !== true && is_resource($resource)) {
@@ -593,7 +593,7 @@ class Manager implements IManager {
 				$type->validateInput($io[$key]);
 				if ($type === EShapeType::Enum) {
 					if (!isset($enumValues[$key])) {
-						throw new ValidationException('Provider did not provide enum values for an enum slot: "' . $key .'"');
+						throw new ValidationException('Provider did not provide enum values for an enum slot: "' . $key . '"');
 					}
 					$type->validateEnum($io[$key], $enumValues[$key]);
 				}
@@ -891,7 +891,8 @@ class Manager implements IManager {
 		if ($error !== null) {
 			$task->setStatus(Task::STATUS_FAILED);
 			$task->setEndedAt(time());
-			$task->setErrorMessage($error);
+			// truncate error message to 1000 characters
+			$task->setErrorMessage(mb_substr($error, 0, 1000));
 			$this->logger->warning('A TaskProcessing ' . $task->getTaskTypeId() . ' task with id ' . $id . ' failed with the following message: ' . $error);
 		} elseif ($result !== null) {
 			$taskTypes = $this->getAvailableTaskTypes();
@@ -920,7 +921,7 @@ class Manager implements IManager {
 					if ($value instanceof Node) {
 						$output[$key] = $value->getId();
 					}
-					if (is_array($value) && $value[0] instanceof Node) {
+					if (is_array($value) && isset($value[0]) && $value[0] instanceof Node) {
 						$output[$key] = array_map(fn ($node) => $node->getId(), $value);
 					}
 				}
@@ -956,7 +957,7 @@ class Manager implements IManager {
 			$this->taskMapper->update($taskEntity);
 			$this->runWebhook($task);
 		} catch (\OCP\DB\Exception $e) {
-			throw new \OCP\TaskProcessing\Exception\Exception('There was a problem finding the task', 0, $e);
+			throw new \OCP\TaskProcessing\Exception\Exception($e->getMessage());
 		}
 		if ($task->getStatus() === Task::STATUS_SUCCESSFUL) {
 			$event = new TaskSuccessfulEvent($task);
@@ -994,7 +995,7 @@ class Manager implements IManager {
 		}
 		$newInputOutput = [];
 		$spec = array_reduce($specs, fn ($carry, $spec) => $carry + $spec, []);
-		foreach($spec as $key => $descriptor) {
+		foreach ($spec as $key => $descriptor) {
 			$type = $descriptor->getShapeType();
 			if (!isset($input[$key])) {
 				continue;
@@ -1047,7 +1048,7 @@ class Manager implements IManager {
 
 	public function getTasks(
 		?string $userId, ?string $taskTypeId = null, ?string $appId = null, ?string $customId = null,
-		?int $status = null, ?int $scheduleAfter = null, ?int $endedBefore = null
+		?int $status = null, ?int $scheduleAfter = null, ?int $endedBefore = null,
 	): array {
 		try {
 			$taskEntities = $this->taskMapper->findTasks($userId, $taskTypeId, $appId, $customId, $status, $scheduleAfter, $endedBefore);
@@ -1086,7 +1087,7 @@ class Manager implements IManager {
 			$folder = $this->appData->newFolder('TaskProcessing');
 		}
 		$spec = array_reduce($specs, fn ($carry, $spec) => $carry + $spec, []);
-		foreach($spec as $key => $descriptor) {
+		foreach ($spec as $key => $descriptor) {
 			$type = $descriptor->getShapeType();
 			if (!isset($output[$key])) {
 				continue;
@@ -1202,7 +1203,7 @@ class Manager implements IManager {
 		$provider = $this->getPreferredProvider($task->getTaskTypeId());
 		// calculate expected completion time
 		$completionExpectedAt = new \DateTime('now');
-		$completionExpectedAt->add(new \DateInterval('PT'.$provider->getExpectedRuntime().'S'));
+		$completionExpectedAt->add(new \DateInterval('PT' . $provider->getExpectedRuntime() . 'S'));
 		$task->setCompletionExpectedAt($completionExpectedAt);
 	}
 
@@ -1231,7 +1232,7 @@ class Manager implements IManager {
 	private function validateOutputFileIds(array $output, ...$specs): array {
 		$newOutput = [];
 		$spec = array_reduce($specs, fn ($carry, $spec) => $carry + $spec, []);
-		foreach($spec as $key => $descriptor) {
+		foreach ($spec as $key => $descriptor) {
 			$type = $descriptor->getShapeType();
 			if (!isset($output[$key])) {
 				continue;

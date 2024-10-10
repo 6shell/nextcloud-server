@@ -123,6 +123,7 @@
     "%1$s shared »%2$s« with you and wants to add:" : "%1$s deelde \"%2$s\" met jou en wil toevoegen:",
     "%1$s shared »%2$s« with you and wants to add" : "%1$s deelde \"%2$s\" met jou en wil toevoegen",
     "»%s« added a note to a file shared with you" : "\"%s\" voegde een notitie toe aan een bestand dat met jou is gedeeld",
+    "Unknown share type" : "Onbekend type gedeelde folder",
     "You are not allowed to share %s" : "Je bent niet bevoegd om %s te delen",
     "Cannot increase permissions of %s" : "Kan de machtiging van %s niet verhogen.",
     "Files cannot be shared with delete permissions" : "Bestanden kunnen niet worden gedeeld met verwijdermachtigingen",
@@ -181,7 +182,6 @@
     "Login canceled by app" : "Inloggen geannuleerd door app",
     "App \"%1$s\" cannot be installed because the following dependencies are not fulfilled: %2$s" : "App \"%1$s\" kan niet worden geïnstalleerd, omdat de volgende afhankelijkheden niet zijn ingevuld: %2$s",
     "a safe home for all your data" : "een veilige plek voor al je gegevens",
-    "File is currently busy, please try again later" : "Bestandsverwerking bezig, probeer het later opnieuw",
     "Application is not enabled" : "De applicatie is niet ingeschakeld",
     "Authentication error" : "Authenticatiefout",
     "Token expired. Please reload page." : "Token verlopen.  Herlaad de pagina.",
@@ -246,6 +246,7 @@
     "Username must not consist of dots only" : "De gebruikersnaam mag niet uit alleen punten bestaan",
     "Username is invalid because files already exist for this user" : "Gebruikersnaam is ongeldig omdat er al bestanden voor deze gebruiker bestaan",
     "User disabled" : "Gebruiker uitgeschakeld",
+    "File is currently busy, please try again later" : "Bestandsverwerking bezig, probeer het later opnieuw",
     "Your data directory is readable by other users." : "Je datamap is leesbaar voor andere gebruikers.",
     "Please change the permissions to 0770 so that the directory cannot be listed by other users." : "Wijzig de machtiging in 0770 zodat de directory niet door andere gebruikers bekeken kan worden.",
     "Ensure there is a file called \".ocdata\" in the root of the data directory." : "Zorg dat er een bestand genaamd \".ocdata\" in de hoofddirectory aanwezig is."

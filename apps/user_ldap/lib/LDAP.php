@@ -293,7 +293,7 @@ class LDAP implements ILDAPWrapper {
 
 	private function preFunctionCall(string $functionName, array $args): void {
 		$this->curArgs = $args;
-		if(strcasecmp($functionName, 'ldap_bind') === 0 || strcasecmp($functionName, 'ldap_exop_passwd') === 0) {
+		if (strcasecmp($functionName, 'ldap_bind') === 0 || strcasecmp($functionName, 'ldap_exop_passwd') === 0) {
 			// The arguments are not key value pairs
 			// \OCA\User_LDAP\LDAP::bind passes 3 arguments, the 3rd being the pw
 			// Remove it via direct array access for now, although a better solution could be found mebbe?
@@ -369,7 +369,7 @@ class LDAP implements ILDAPWrapper {
 
 	/**
 	 * Called after an ldap method is run to act on LDAP error if necessary
-	 * @throw \Exception
+	 * @throws \Exception
 	 */
 	private function postFunctionCall(string $functionName): void {
 		if ($this->isResource($this->curArgs[0])) {

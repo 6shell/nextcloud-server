@@ -38,18 +38,20 @@ use OCA\DAV\Connector\Sabre\QuotaPlugin;
 use OCA\DAV\Connector\Sabre\RequestIdHeaderPlugin;
 use OCA\DAV\Connector\Sabre\SharesPlugin;
 use OCA\DAV\Connector\Sabre\TagsPlugin;
+use OCA\DAV\Connector\Sabre\ZipFolderPlugin;
 use OCA\DAV\DAV\CustomPropertiesBackend;
 use OCA\DAV\DAV\PublicAuth;
 use OCA\DAV\DAV\ViewOnlyPlugin;
 use OCA\DAV\Events\SabrePluginAddEvent;
 use OCA\DAV\Events\SabrePluginAuthInitEvent;
-use OCA\DAV\Files\BrowserErrorPagePlugin;
+use OCA\DAV\Files\ErrorPagePlugin;
 use OCA\DAV\Files\LazySearchBackend;
 use OCA\DAV\Profiler\ProfilerPlugin;
 use OCA\DAV\Provisioning\Apple\AppleProvisioningPlugin;
 use OCA\DAV\SystemTag\SystemTagPlugin;
 use OCA\DAV\Upload\ChunkingPlugin;
 use OCA\DAV\Upload\ChunkingV2Plugin;
+use OCA\Theming\ThemingDefaults;
 use OCP\AppFramework\Http\Response;
 use OCP\Diagnostics\IEventLogger;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -84,9 +86,9 @@ class Server {
 
 		$this->request = $request;
 		$this->baseUri = $baseUri;
-		$logger = \OC::$server->get(LoggerInterface::class);
-		/** @var IEventDispatcher $dispatcher */
-		$dispatcher = \OC::$server->get(IEventDispatcher::class);
+
+		$logger = \OCP\Server::get(LoggerInterface::class);
+		$eventDispatcher = \OCP\Server::get(IEventDispatcher::class);
 
 		$root = new RootCollection();
 		$this->server = new \OCA\DAV\Connector\Sabre\Server(new CachingTree($root));
@@ -110,7 +112,10 @@ class Server {
 		$this->server->setBaseUri($this->baseUri);
 
 		$this->server->addPlugin(new ProfilerPlugin($this->request));
-		$this->server->addPlugin(new BlockLegacyClientPlugin(\OC::$server->getConfig()));
+		$this->server->addPlugin(new BlockLegacyClientPlugin(
+			\OCP\Server::get(IConfig::class),
+			\OCP\Server::get(ThemingDefaults::class),
+		));
 		$this->server->addPlugin(new AnonymousOptionsPlugin());
 		$authPlugin = new Plugin();
 		$authPlugin->addBackend(new PublicAuth());
@@ -118,10 +123,10 @@ class Server {
 
 		// allow setup of additional auth backends
 		$event = new SabrePluginEvent($this->server);
-		$dispatcher->dispatch('OCA\DAV\Connector\Sabre::authInit', $event);
+		$eventDispatcher->dispatch('OCA\DAV\Connector\Sabre::authInit', $event);
 
 		$newAuthEvent = new SabrePluginAuthInitEvent($this->server);
-		$dispatcher->dispatchTyped($newAuthEvent);
+		$eventDispatcher->dispatchTyped($newAuthEvent);
 
 		$bearerAuthBackend = new BearerAuth(
 			\OC::$server->getUserSession(),
@@ -205,11 +210,16 @@ class Server {
 		$this->server->addPlugin(new RequestIdHeaderPlugin(\OC::$server->get(IRequest::class)));
 		$this->server->addPlugin(new ChunkingV2Plugin(\OCP\Server::get(ICacheFactory::class)));
 		$this->server->addPlugin(new ChunkingPlugin());
+		$this->server->addPlugin(new ZipFolderPlugin(
+			$this->server->tree,
+			$logger,
+			$eventDispatcher,
+		));
 
 		// allow setup of additional plugins
-		$dispatcher->dispatch('OCA\DAV\Connector\Sabre::addPlugin', $event);
+		$eventDispatcher->dispatch('OCA\DAV\Connector\Sabre::addPlugin', $event);
 		$typedEvent = new SabrePluginAddEvent($this->server);
-		$dispatcher->dispatchTyped($typedEvent);
+		$eventDispatcher->dispatchTyped($typedEvent);
 
 		// Some WebDAV clients do require Class 2 WebDAV support (locking), since
 		// we do not provide locking we emulate it using a fake locking plugin.
@@ -221,15 +231,13 @@ class Server {
 			$this->server->addPlugin(new FakeLockerPlugin());
 		}
 
-		if (BrowserErrorPagePlugin::isBrowserRequest($request)) {
-			$this->server->addPlugin(new BrowserErrorPagePlugin());
-		}
+		$this->server->addPlugin(new ErrorPagePlugin($this->request, \OC::$server->getConfig()));
 
 		$lazySearchBackend = new LazySearchBackend();
 		$this->server->addPlugin(new SearchPlugin($lazySearchBackend));
 
 		// wait with registering these until auth is handled and the filesystem is setup
-		$this->server->on('beforeMethod:*', function () use ($root, $lazySearchBackend, $logger) {
+		$this->server->on('beforeMethod:*', function () use ($root, $lazySearchBackend, $logger): void {
 			// Allow view-only plugin for webdav requests
 			$this->server->addPlugin(new ViewOnlyPlugin(
 				\OC::$server->getUserFolder(),

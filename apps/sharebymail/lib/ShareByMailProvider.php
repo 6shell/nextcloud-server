@@ -684,7 +684,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		?\DateTimeInterface $expirationTime,
 		?string $note = '',
 		?IAttributes $attributes = null,
-		?bool $mailSend = true
+		?bool $mailSend = true,
 	): int {
 		$qb = $this->dbConnection->getQueryBuilder();
 		$qb->insert('share')
@@ -739,11 +739,14 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		$shareAttributes = $this->formatShareAttributes($share->getAttributes());
 
 		/*
-		 * We allow updating the permissions and password of mail shares
+		 * We allow updating mail shares
 		 */
 		$qb = $this->dbConnection->getQueryBuilder();
 		$qb->update('share')
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($share->getId())))
+			->set('item_source', $qb->createNamedParameter($share->getNodeId()))
+			->set('file_source', $qb->createNamedParameter($share->getNodeId()))
+			->set('share_with', $qb->createNamedParameter($share->getSharedWith()))
 			->set('permissions', $qb->createNamedParameter($share->getPermissions()))
 			->set('uid_owner', $qb->createNamedParameter($share->getShareOwner()))
 			->set('uid_initiator', $qb->createNamedParameter($share->getSharedBy()))
@@ -756,6 +759,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 			->set('hide_download', $qb->createNamedParameter((int)$share->getHideDownload(), IQueryBuilder::PARAM_INT))
 			->set('attributes', $qb->createNamedParameter($shareAttributes))
 			->set('mail_send', $qb->createNamedParameter((int)$share->getMailSend(), IQueryBuilder::PARAM_INT))
+			->set('reminder_sent', $qb->createNamedParameter($share->getReminderSent(), IQueryBuilder::PARAM_BOOL))
 			->executeStatement();
 
 		if ($originalShare->getNote() !== $share->getNote() && $share->getNote() !== '') {
@@ -987,7 +991,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 	}
 
 	/**
-	 * Create a share object from an database row
+	 * Create a share object from a database row
 	 *
 	 * @throws InvalidShare
 	 * @throws ShareNotFound
@@ -1012,6 +1016,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 		$share->setLabel($data['label']);
 		$share->setSendPasswordByTalk((bool)$data['password_by_talk']);
 		$share->setHideDownload((bool)$data['hide_download']);
+		$share->setReminderSent((bool)$data['reminder_sent']);
 
 		if ($data['uid_initiator'] !== null) {
 			$share->setShareOwner($data['uid_owner']);

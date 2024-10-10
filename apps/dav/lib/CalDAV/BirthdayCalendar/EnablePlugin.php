@@ -110,12 +110,12 @@ class EnablePlugin extends ServerPlugin {
 
 		$requestBody = $request->getBodyAsString();
 		$this->server->xml->parse($requestBody, $request->getUrl(), $documentType);
-		if ($documentType !== '{'.self::NS_Nextcloud.'}enable-birthday-calendar') {
+		if ($documentType !== '{' . self::NS_Nextcloud . '}enable-birthday-calendar') {
 			return;
 		}
 
 		$owner = substr($node->getOwner(), 17);
-		if($owner !== $this->user->getUID()) {
+		if ($owner !== $this->user->getUID()) {
 			$this->server->httpResponse->setStatus(403);
 			return false;
 		}

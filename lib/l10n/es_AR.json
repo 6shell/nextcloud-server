@@ -63,6 +63,7 @@
     "Sharing backend for %s not found" : "No fue encontrado el Backend que comparte para %s",
     "Click the button below to open it." : "Haga click en el botón de abajo para abrirlo.",
     "Open »%s«" : "Abrir »%s«",
+    "Unknown share type" : "Tipo de elemento compartido desconocido",
     "You are not allowed to share %s" : "No tiene permitido compartir %s",
     "Cannot increase permissions of %s" : "No se pueden incrementar los permisos de %s",
     "Expiration date is in the past" : "La fecha de expiración ya ha pasado",
@@ -115,7 +116,6 @@
     "A valid password must be provided" : "Se debe proporcionar una contraseña válida",
     "Login canceled by app" : "Inicio de sesión cancelado por la aplicación",
     "a safe home for all your data" : "un lugar seguro para todos sus datos",
-    "File is currently busy, please try again later" : "El archivo se encuentra actualmente en uso, favor de intentarlo más tarde. ",
     "Application is not enabled" : "La aplicación está deshabilitada",
     "Authentication error" : "Error de autenticación",
     "Token expired. Please reload page." : "La ficha ha expirado. Favor de recarga la página.",
@@ -152,6 +152,7 @@
     "Username contains whitespace at the beginning or at the end" : "El nombre del usuario contiene un espacio en blanco al inicio o al final",
     "Username must not consist of dots only" : "El nombre de usuario no debe consistir de solo puntos. ",
     "User disabled" : "Usuario deshabilitado",
+    "File is currently busy, please try again later" : "El archivo se encuentra actualmente en uso, favor de intentarlo más tarde. ",
     "Please change the permissions to 0770 so that the directory cannot be listed by other users." : "Favor de cambiar los permisos a 0770 para que el directorio no pueda ser enlistado por otros usuarios. "
 },"pluralForm" :"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 }

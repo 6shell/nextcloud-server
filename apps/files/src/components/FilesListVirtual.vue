@@ -65,6 +65,7 @@ import type { UserConfig } from '../types'
 import { getFileListHeaders, Folder, View, getFileActions, FileType } from '@nextcloud/files'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
+import { subscribe, unsubscribe } from '@nextcloud/event-bus'
 import { defineComponent } from 'vue'
 
 import { action as sidebarAction } from '../actions/sidebarAction.ts'
@@ -200,8 +201,12 @@ export default defineComponent({
 			handler() {
 				// wait for scrolling and updating the actions to settle
 				this.$nextTick(() => {
-					if (this.fileId && this.openFile) {
-						this.handleOpenFile(this.fileId)
+					if (this.fileId) {
+						if (this.openFile) {
+							this.handleOpenFile(this.fileId)
+						} else {
+							this.unselectFile()
+						}
 					}
 				})
 			},
@@ -214,6 +219,8 @@ export default defineComponent({
 		const mainContent = window.document.querySelector('main.app-content') as HTMLElement
 		mainContent.addEventListener('dragover', this.onDragOver)
 
+		subscribe('files:sidebar:closed', this.unselectFile)
+
 		// If the file list is mounted with a fileId specified
 		// then we need to open the sidebar initially
 		if (this.fileId) {
@@ -224,6 +231,8 @@ export default defineComponent({
 	beforeDestroy() {
 		const mainContent = window.document.querySelector('main.app-content') as HTMLElement
 		mainContent.removeEventListener('dragover', this.onDragOver)
+
+		unsubscribe('files:sidebar:closed', this.unselectFile)
 	},
 
 	methods: {
@@ -251,15 +260,22 @@ export default defineComponent({
 			}
 		},
 
+		unselectFile() {
+			// If the Sidebar is closed and if openFile is false, remove the file id from the URL
+			if (!this.openFile && OCA.Files.Sidebar.file === '') {
+				window.OCP.Files.Router.goToRoute(
+					null,
+					{ ...this.$route.params, fileid: String(this.currentFolder.fileid ?? '') },
+					this.$route.query,
+				)
+			}
+		},
+
 		/**
 		 * Handle opening a file (e.g. by ?openfile=true)
 		 * @param fileId File to open
 		 */
 		handleOpenFile(fileId: number|null) {
-			if (!this.openFile) {
-				return
-			}
-
 			if (fileId === null || this.openFileId === fileId) {
 				return
 			}
@@ -566,8 +582,8 @@ export default defineComponent({
 
 			&-blurhash {
 				position: absolute;
-				top: 0;
-				left: 0;
+				inset-block-start: 0;
+				inset-inline-start: 0;
 				height: 100%;
 				width: 100%;
 				object-fit: cover;
@@ -577,6 +593,9 @@ export default defineComponent({
 				// Center and contain the preview
 				object-fit: contain;
 				object-position: center;
+
+				height: 100%;
+				width: 100%;
 
 				/* Preview not loaded animation effect */
 				&:not(.files-list__row-icon-preview--loaded) {

@@ -4,7 +4,7 @@
 -->
 <template>
 	<NcAppContent :page-heading="pageHeading" data-cy-files-content>
-		<div class="files-list__header">
+		<div class="files-list__header" :class="{ 'files-list__header--public': isPublic }">
 			<!-- Current folder breadcrumbs -->
 			<BreadCrumbs :path="directory" @reload="fetchContent">
 				<template #actions>
@@ -188,6 +188,13 @@ export default defineComponent({
 		filesListWidthMixin,
 		filesSortingMixin,
 	],
+
+	props: {
+		isPublic: {
+			type: Boolean,
+			default: false,
+		},
+	},
 
 	setup() {
 		const filesStore = useFilesStore()
@@ -393,7 +400,7 @@ export default defineComponent({
 		 * Check if current folder has share permissions
 		 */
 		canShare() {
-			return isSharingEnabled
+			return isSharingEnabled && !this.isPublic
 				&& this.currentFolder && (this.currentFolder.permissions & Permission.SHARE) !== 0
 		},
 
@@ -651,7 +658,7 @@ export default defineComponent({
 		},
 
 		filterDirContent() {
-			let nodes = this.dirContents
+			let nodes: INode[] = this.dirContents
 			for (const filter of this.filtersStore.sortedFilters) {
 				nodes = filter.filter(nodes)
 			}
@@ -662,6 +669,13 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
+:global(.toast-loading-icon) {
+	// Reduce start margin (it was made for text but this is an icon)
+	margin-inline-start: -4px;
+	// 16px icon + 5px on both sides
+	min-width: 26px;
+}
+
 .app-content {
 	// Virtual list needs to be full height and is scrollable
 	display: flex;
@@ -681,6 +695,11 @@ export default defineComponent({
 		// Align with the navigation toggle icon
 		margin-block: var(--app-navigation-padding, 4px);
 		margin-inline: calc(var(--default-clickable-area, 44px) + 2 * var(--app-navigation-padding, 4px)) var(--app-navigation-padding, 4px);
+
+		&--public {
+			// There is no navigation toggle on public shares
+			margin-inline: 0 var(--app-navigation-padding, 4px);
+		}
 
 		>* {
 			// Do not grow or shrink (horizontally)

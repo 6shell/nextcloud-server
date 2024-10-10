@@ -41,7 +41,7 @@ class AllConfig implements IConfig {
 	private CappedMemoryCache $userCache;
 
 	public function __construct(
-		private SystemConfig $systemConfig
+		private SystemConfig $systemConfig,
 	) {
 		$this->userCache = new CappedMemoryCache();
 	}
@@ -242,10 +242,10 @@ class AllConfig implements IConfig {
 		$prevValue = $this->getUserValue($userId, $appName, $key, null);
 
 		if ($prevValue !== null) {
-			if ($prevValue === (string)$value) {
-				return;
-			} elseif ($preCondition !== null && $prevValue !== (string)$preCondition) {
+			if ($preCondition !== null && $prevValue !== (string)$preCondition) {
 				throw new PreConditionNotMetException();
+			} elseif ($prevValue === (string)$value) {
+				return;
 			} else {
 				$qb = $this->connection->getQueryBuilder();
 				$qb->update('preferences')
@@ -462,7 +462,7 @@ class AllConfig implements IConfig {
 	 * @param string $appName the app to get the user for
 	 * @param string $key the key to get the user for
 	 * @param string $value the value to get the user for
-	 * @return array of user IDs
+	 * @return list<string> of user IDs
 	 */
 	public function getUsersForUserValue($appName, $key, $value) {
 		// TODO - FIXME
@@ -496,7 +496,7 @@ class AllConfig implements IConfig {
 	 * @param string $appName the app to get the user for
 	 * @param string $key the key to get the user for
 	 * @param string $value the value to get the user for
-	 * @return array of user IDs
+	 * @return list<string> of user IDs
 	 */
 	public function getUsersForUserValueCaseInsensitive($appName, $key, $value) {
 		// TODO - FIXME
