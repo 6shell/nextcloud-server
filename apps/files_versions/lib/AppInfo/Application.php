@@ -42,6 +42,7 @@ use OCP\IServerContainer;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
+use OCP\Server;
 use OCP\Share\IManager as IShareManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -68,7 +69,7 @@ class Application extends App implements IBootstrap {
 			return new Principal(
 				$server->get(IUserManager::class),
 				$server->get(IGroupManager::class),
-				\OC::$server->get(IAccountManager::class),
+				Server::get(IAccountManager::class),
 				$server->get(IShareManager::class),
 				$server->get(IUserSession::class),
 				$server->get(IAppManager::class),
@@ -114,7 +115,7 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function registerVersionBackends(ContainerInterface $container, IAppManager $appManager, LoggerInterface $logger): void {
-		foreach ($appManager->getInstalledApps() as $app) {
+		foreach ($appManager->getEnabledApps() as $app) {
 			$appInfo = $appManager->getAppInfo($app);
 			if (isset($appInfo['versions'])) {
 				$backends = $appInfo['versions'];

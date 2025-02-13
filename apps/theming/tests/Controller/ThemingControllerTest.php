@@ -25,7 +25,9 @@ use OCP\IConfig;
 use OCP\IL10N;
 use OCP\INavigationManager;
 use OCP\IRequest;
+use OCP\ITempManager;
 use OCP\IURLGenerator;
+use OCP\Server;
 use PHPUnit\Framework\MockObject\MockObject;
 use Test\TestCase;
 
@@ -355,8 +357,8 @@ class ThemingControllerTest extends TestCase {
 
 	/** @dataProvider dataUpdateImages */
 	public function testUpdateLogoNormalLogoUpload($mimeType, $folderExists = true): void {
-		$tmpLogo = \OC::$server->getTempManager()->getTemporaryFolder() . '/logo.svg';
-		$destination = \OC::$server->getTempManager()->getTemporaryFolder();
+		$tmpLogo = Server::get(ITempManager::class)->getTemporaryFolder() . '/logo.svg';
+		$destination = Server::get(ITempManager::class)->getTemporaryFolder();
 
 		touch($tmpLogo);
 		copy(__DIR__ . '/../../../../tests/data/testimage.png', $tmpLogo);
@@ -407,7 +409,7 @@ class ThemingControllerTest extends TestCase {
 
 	/** @dataProvider dataUpdateImages */
 	public function testUpdateLogoLoginScreenUpload($folderExists): void {
-		$tmpLogo = \OC::$server->getTempManager()->getTemporaryFolder() . 'logo.png';
+		$tmpLogo = Server::get(ITempManager::class)->getTemporaryFolder() . 'logo.png';
 
 		touch($tmpLogo);
 		copy(__DIR__ . '/../../../../tests/data/desktopapp.png', $tmpLogo);
@@ -455,7 +457,7 @@ class ThemingControllerTest extends TestCase {
 	}
 
 	public function testUpdateLogoLoginScreenUploadWithInvalidImage(): void {
-		$tmpLogo = \OC::$server->getTempManager()->getTemporaryFolder() . '/logo.svg';
+		$tmpLogo = Server::get(ITempManager::class)->getTemporaryFolder() . '/logo.svg';
 
 		touch($tmpLogo);
 		file_put_contents($tmpLogo, file_get_contents(__DIR__ . '/../../../../tests/data/data.zip'));
@@ -713,7 +715,15 @@ class ThemingControllerTest extends TestCase {
 		@$this->assertEquals($expected, $this->themingController->getImage('background'));
 	}
 
-	public function testGetManifest(): void {
+	public static function dataGetManifest(): array {
+		return [
+			[true],
+			[false],
+		];
+	}
+
+	/** @dataProvider dataGetManifest */
+	public function testGetManifest(bool $standalone): void {
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
@@ -734,6 +744,11 @@ class ThemingControllerTest extends TestCase {
 				['theming.Icon.getTouchIcon', ['app' => 'core'], 'touchicon'],
 				['theming.Icon.getFavicon', ['app' => 'core'], 'favicon'],
 			]);
+		$this->config
+			->expects($this->once())
+			->method('getSystemValueBool')
+			->with('theming.standalone_window.enabled', true)
+			->willReturn($standalone);
 		$response = new JSONResponse([
 			'name' => 'Nextcloud',
 			'start_url' => 'localhost',
@@ -750,7 +765,7 @@ class ThemingControllerTest extends TestCase {
 						'sizes' => '16x16'
 					]
 				],
-			'display' => 'standalone',
+			'display' => $standalone ? 'standalone' : 'browser',
 			'short_name' => 'Nextcloud',
 			'theme_color' => null,
 			'background_color' => null,
