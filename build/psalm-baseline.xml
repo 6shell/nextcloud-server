@@ -543,12 +543,6 @@
       <code><![CDATA[bool]]></code>
     </InvalidReturnType>
   </file>
-  <file src="apps/dav/lib/HookManager.php">
-    <InvalidPropertyAssignmentValue>
-      <code><![CDATA[$this->usersToDelete]]></code>
-      <code><![CDATA[$this->usersToDelete]]></code>
-    </InvalidPropertyAssignmentValue>
-  </file>
   <file src="apps/dav/lib/Migration/BuildCalendarSearchIndexBackgroundJob.php">
     <ParamNameMismatch>
       <code><![CDATA[$arguments]]></code>
@@ -1234,12 +1228,6 @@
     <InvalidScalarArgument>
       <code><![CDATA[$this->timeFactory->getTime()]]></code>
     </InvalidScalarArgument>
-  </file>
-  <file src="core/Command/Maintenance/Mimetype/UpdateDB.php">
-    <UndefinedInterfaceMethod>
-      <code><![CDATA[getAllMappings]]></code>
-      <code><![CDATA[updateFilecache]]></code>
-    </UndefinedInterfaceMethod>
   </file>
   <file src="core/Command/Preview/Repair.php">
     <UndefinedInterfaceMethod>
@@ -2280,6 +2268,14 @@
     <InvalidReturnType>
       <code><![CDATA[?IImage]]></code>
     </InvalidReturnType>
+  </file>
+  <file src="lib/private/Profile/Actions/FediverseAction.php">
+    <NoValue>
+      <code><![CDATA[$instance]]></code>
+    </NoValue>
+    <RedundantCondition>
+      <code><![CDATA[$instance === '']]></code>
+    </RedundantCondition>
   </file>
   <file src="lib/private/RedisFactory.php">
     <InvalidArgument>

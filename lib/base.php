@@ -18,6 +18,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use OCP\Server;
 use OCP\Share;
 use OCP\User\Events\UserChangedEvent;
+use OCP\Util;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Routing\Exception\MethodNotAllowedException;
 use function OCP\Log\logger;
@@ -255,7 +256,7 @@ class OC {
 		$tooBig = false;
 		if (!$disableWebUpdater) {
 			$apps = Server::get(\OCP\App\IAppManager::class);
-			if ($apps->isInstalled('user_ldap')) {
+			if ($apps->isEnabledForAnyone('user_ldap')) {
 				$qb = Server::get(\OCP\IDBConnection::class)->getQueryBuilder();
 
 				$result = $qb->select($qb->func()->count('*', 'user_count'))
@@ -266,7 +267,7 @@ class OC {
 
 				$tooBig = ($row['user_count'] > 50);
 			}
-			if (!$tooBig && $apps->isInstalled('user_saml')) {
+			if (!$tooBig && $apps->isEnabledForAnyone('user_saml')) {
 				$qb = Server::get(\OCP\IDBConnection::class)->getQueryBuilder();
 
 				$result = $qb->select($qb->func()->count('*', 'user_count'))
@@ -828,6 +829,21 @@ class OC {
 		register_shutdown_function(function () use ($eventLogger) {
 			$eventLogger->end('request');
 		});
+
+		register_shutdown_function(function () {
+			$memoryPeak = memory_get_peak_usage();
+			$logLevel = match (true) {
+				$memoryPeak > 500_000_000 => ILogger::FATAL,
+				$memoryPeak > 400_000_000 => ILogger::ERROR,
+				$memoryPeak > 300_000_000 => ILogger::WARN,
+				default => null,
+			};
+			if ($logLevel !== null) {
+				$message = 'Request used more than 300 MB of RAM: ' . Util::humanFileSize($memoryPeak);
+				$logger = Server::get(LoggerInterface::class);
+				$logger->log($logLevel, $message, ['app' => 'core']);
+			}
+		});
 	}
 
 	/**
@@ -1130,11 +1146,11 @@ class OC {
 	}
 
 	protected static function tryAppAPILogin(OCP\IRequest $request): bool {
-		$appManager = Server::get(OCP\App\IAppManager::class);
 		if (!$request->getHeader('AUTHORIZATION-APP-API')) {
 			return false;
 		}
-		if (!$appManager->isInstalled('app_api')) {
+		$appManager = Server::get(OCP\App\IAppManager::class);
+		if (!$appManager->isEnabledForAnyone('app_api')) {
 			return false;
 		}
 		try {
